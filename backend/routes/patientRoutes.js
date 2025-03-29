@@ -10,7 +10,8 @@ import {
   getAllHospitals,
   getSpecializationsByHospital,
   checkAvailableTimeSlots,
-  bookAppointment
+  bookAppointment,
+  getAppointmentStatus
 } from '../controllers/appointmentController.js';
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.get('/hospitals/specialization/:specialization', getHospitalsBySpecializa
 router.get('/hospitals', getAllHospitals);
 router.get('/hospitals/:hospitalId/specializations', getSpecializationsByHospital);
 router.get('/timeslots', checkAvailableTimeSlots);
-router.post('/book', bookAppointment);
+router.post('/:patientId/book', bookAppointment); // Updated to include patientId
+router.get('/:patientId/appointments/:appointmentId/status', getAppointmentStatus); // New endpoint
 
 export default router;

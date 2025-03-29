@@ -1,6 +1,7 @@
 // controllers/appointmentController.js
 import Appointment from '../models/appointment.js';
 import Hospital from '../models/hospital.js';
+import Patient from '../models/patient.js';
 
 // Get all specializations across all hospitals
 export const getAllSpecializations = async (req, res) => {
@@ -58,7 +59,6 @@ export const checkAvailableTimeSlots = async (req, res) => {
       status: { $in: ['pending', 'approved'] }
     });
 
-    // Example: Assume time slots are in 1-hour intervals from 9 AM to 5 PM
     const allTimeSlots = [
       '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
       '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'
@@ -73,10 +73,17 @@ export const checkAvailableTimeSlots = async (req, res) => {
   }
 };
 
-// Book an appointment
+// Book an appointment (Updated to use patientId from URL)
 export const bookAppointment = async (req, res) => {
   try {
+    const { patientId } = req.params;
     const { patientName, problem, specialization, hospitalId, date, time } = req.body;
+
+    // Validate patient
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
 
     // Validate hospital
     const hospital = await Hospital.findById(hospitalId);
@@ -103,6 +110,7 @@ export const bookAppointment = async (req, res) => {
 
     // Create appointment
     const appointment = new Appointment({
+      patient: patientId,
       patientName,
       problem,
       specialization,
@@ -123,7 +131,9 @@ export const bookAppointment = async (req, res) => {
 export const getPendingAppointments = async (req, res) => {
   try {
     const { hospitalId } = req.params;
-    const appointments = await Appointment.find({ hospital: hospitalId, status: 'pending' });
+    const appointments = await Appointment.find({ hospital: hospitalId, status: 'pending' })
+      .populate('patient', 'fullName email')
+      .populate('hospital', 'hospitalName');
     res.json({ appointments });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -149,6 +159,46 @@ export const updateAppointmentStatus = async (req, res) => {
     await appointment.save();
 
     res.json({ message: `Appointment ${status} successfully` });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Get appointment status for a patient
+export const getAppointmentStatus = async (req, res) => {
+  try {
+    const { patientId, appointmentId } = req.params;
+
+    // Validate patient
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    // Find the appointment
+    const appointment = await Appointment.findOne({
+      _id: appointmentId,
+      patient: patientId
+    })
+      .populate('hospital', 'hospitalName');
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found or does not belong to this patient' });
+    }
+
+    res.json({
+      appointmentId: appointment._id,
+      patientName: appointment.patientName,
+      problem: appointment.problem,
+      specialization: appointment.specialization,
+      hospital: {
+        id: appointment.hospital._id,
+        name: appointment.hospital.hospitalName
+      },
+      date: appointment.date,
+      time: appointment.time,
+      status: appointment.status
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
