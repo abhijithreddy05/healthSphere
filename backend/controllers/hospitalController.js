@@ -8,7 +8,6 @@ export const registerHospital = async (req, res) => {
   try {
     const { hospitalName, email, password } = req.body;
 
-    // Check if hospital already exists
     const existingHospital = await Hospital.findOne({ email });
     if (existingHospital) {
       return res.status(400).json({ message: 'Email already registered' });
@@ -31,23 +30,20 @@ export const loginHospital = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find hospital
     const hospital = await Hospital.findOne({ email });
     if (!hospital) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
     const isMatch = await bcrypt.compare(password, hospital.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
-      { id: hospital._id },
+      { id: hospital._id, role: 'hospital' },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '1d' }
+      { expiresIn: '1h' }
     );
 
     res.json({
@@ -63,6 +59,8 @@ export const loginHospital = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+// Other methods (addDoctor, getSpecializations, getDoctors) remain unchanged
 
 export const addDoctor = async (req, res) => {
   try {

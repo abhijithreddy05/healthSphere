@@ -5,9 +5,8 @@ import jwt from 'jsonwebtoken';
 
 export const registerPatient = async (req, res) => {
   try {
-    const { fullName, contactNumber, email, password } = req.body;
+    const { fullName, email, password } = req.body;
 
-    // Check if patient already exists
     const existingPatient = await Patient.findOne({ email });
     if (existingPatient) {
       return res.status(400).json({ message: 'Email already registered' });
@@ -15,7 +14,6 @@ export const registerPatient = async (req, res) => {
 
     const patient = new Patient({
       fullName,
-      contactNumber,
       email,
       password
     });
@@ -31,23 +29,20 @@ export const loginPatient = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find patient
     const patient = await Patient.findOne({ email });
     if (!patient) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
     const isMatch = await bcrypt.compare(password, patient.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
-      { id: patient._id },
+      { id: patient._id, role: 'patient' },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '1d' }
+      { expiresIn: '1h' }
     );
 
     res.json({

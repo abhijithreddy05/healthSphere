@@ -73,17 +73,14 @@ export const checkAvailableTimeSlots = async (req, res) => {
   }
 };
 
-// Book an appointment (Updated to use patientId from URL)
+// Book an appointment (Updated to use authenticated patient)
 export const bookAppointment = async (req, res) => {
   try {
     const { patientId } = req.params;
     const { patientName, problem, specialization, hospitalId, date, time } = req.body;
 
-    // Validate patient
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
-    }
+    // Patient is already validated by authMiddleware, so we can use req.userModel
+    const patient = req.userModel;
 
     // Validate hospital
     const hospital = await Hospital.findById(hospitalId);
@@ -131,6 +128,7 @@ export const bookAppointment = async (req, res) => {
 export const getPendingAppointments = async (req, res) => {
   try {
     const { hospitalId } = req.params;
+    // Hospital is already validated by authMiddleware
     const appointments = await Appointment.find({ hospital: hospitalId, status: 'pending' })
       .populate('patient', 'fullName email')
       .populate('hospital', 'hospitalName');
@@ -155,6 +153,11 @@ export const updateAppointmentStatus = async (req, res) => {
       return res.status(404).json({ message: 'Appointment not found' });
     }
 
+    // Ensure the hospital making the request matches the appointment's hospital
+    if (appointment.hospital.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied: Hospital mismatch' });
+    }
+
     appointment.status = status;
     await appointment.save();
 
@@ -169,13 +172,7 @@ export const getAppointmentStatus = async (req, res) => {
   try {
     const { patientId, appointmentId } = req.params;
 
-    // Validate patient
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
-    }
-
-    // Find the appointment
+    // Patient is already validated by authMiddleware
     const appointment = await Appointment.findOne({
       _id: appointmentId,
       patient: patientId

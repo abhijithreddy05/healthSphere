@@ -13,20 +13,21 @@ import {
   bookAppointment,
   getAppointmentStatus
 } from '../controllers/appointmentController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Existing patient routes
+// Public routes (no authentication needed)
 router.post('/register', registerPatient);
 router.post('/login', loginPatient);
-
-// Appointment booking routes (nested under /patients)
 router.get('/specializations', getAllSpecializations);
 router.get('/hospitals/specialization/:specialization', getHospitalsBySpecialization);
 router.get('/hospitals', getAllHospitals);
 router.get('/hospitals/:hospitalId/specializations', getSpecializationsByHospital);
 router.get('/timeslots', checkAvailableTimeSlots);
-router.post('/:patientId/book', bookAppointment); // Updated to include patientId
-router.get('/:patientId/appointments/:appointmentId/status', getAppointmentStatus); // New endpoint
+
+// Protected routes (require patient authentication)
+router.post('/:patientId/book', authMiddleware('patient'), bookAppointment);
+router.get('/:patientId/appointments/:appointmentId/status', authMiddleware('patient'), getAppointmentStatus);
 
 export default router;
