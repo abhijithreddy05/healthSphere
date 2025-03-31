@@ -1,25 +1,42 @@
-// controllers/patientController.js
-import Patient from '../models/patient.js';
+import Patient from '../models/Patient.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 export const registerPatient = async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, contactNumber, email, password } = req.body; // Added contactNumber
 
     const existingPatient = await Patient.findOne({ email });
     if (existingPatient) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10); // Added password hashing
     const patient = new Patient({
       fullName,
+      contactNumber, // Added contactNumber
       email,
-      password
+      password: hashedPassword
     });
 
     await patient.save();
-    res.status(201).json({ message: 'Patient registered successfully' });
+
+    const token = jwt.sign(
+      { id: patient._id, role: 'patient' },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '1h' }
+    );
+
+    res.status(201).json({
+      message: 'Patient registered successfully',
+      token, // Added token for frontend consistency
+      user: { // Added user data for frontend
+        id: patient._id,
+        fullName: patient.fullName,
+        contactNumber: patient.contactNumber,
+        email: patient.email
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -48,9 +65,10 @@ export const loginPatient = async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
-      patient: {
+      user: { // Changed "patient" to "user" for consistency
         id: patient._id,
         fullName: patient.fullName,
+        contactNumber: patient.contactNumber, // Added contactNumber
         email: patient.email
       }
     });

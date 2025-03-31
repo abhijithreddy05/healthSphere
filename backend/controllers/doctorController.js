@@ -1,4 +1,3 @@
-// controllers/doctorController.js
 import Doctor from '../models/doctor.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -26,7 +25,7 @@ export const loginDoctor = async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
-      doctor: {
+      user: { // Changed "doctor" to "user" for consistency across controllers
         id: doctor._id,
         name: doctor.name,
         email: doctor.email,

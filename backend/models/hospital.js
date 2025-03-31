@@ -1,4 +1,3 @@
-// models/Hospital.js
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -36,4 +35,7 @@ hospitalSchema.pre('save', async function(next) {
   next();
 });
 
-export default mongoose.model('Hospital', hospitalSchema);
+// Prevent overwriting the model
+const Hospital = mongoose.models.Hospital || mongoose.model('Hospital', hospitalSchema);
+
+export default Hospital;

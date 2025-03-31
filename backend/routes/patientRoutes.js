@@ -1,17 +1,17 @@
-// routes/patientRoutes.js
 import express from 'express';
-import { 
-  registerPatient, 
-  loginPatient 
+import {
+  registerPatient,
+  loginPatient,
 } from '../controllers/patientController.js';
-import { 
+import {
   getAllSpecializations,
   getHospitalsBySpecialization,
   getAllHospitals,
   getSpecializationsByHospital,
+  getDoctorsByHospitalAndSpecialization,
   checkAvailableTimeSlots,
   bookAppointment,
-  getAppointmentStatus
+  getAppointmentStatus,
 } from '../controllers/appointmentController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 
@@ -24,6 +24,7 @@ router.get('/specializations', getAllSpecializations);
 router.get('/hospitals/specialization/:specialization', getHospitalsBySpecialization);
 router.get('/hospitals', getAllHospitals);
 router.get('/hospitals/:hospitalId/specializations', getSpecializationsByHospital);
+router.get('/doctors', getDoctorsByHospitalAndSpecialization);
 router.get('/timeslots', checkAvailableTimeSlots);
 
 // Protected routes (require patient authentication)

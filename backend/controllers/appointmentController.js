@@ -1,7 +1,7 @@
-// controllers/appointmentController.js
 import Appointment from '../models/appointment.js';
-import Hospital from '../models/hospital.js';
-import Patient from '../models/patient.js';
+import Hospital from '../models/Hospital.js';
+import Doctor from '../models/doctor.js';
+import Patient from '../models/Patient.js';
 
 // Get all specializations across all hospitals
 export const getAllSpecializations = async (req, res) => {
@@ -19,7 +19,15 @@ export const getHospitalsBySpecialization = async (req, res) => {
   try {
     const { specialization } = req.params;
     const hospitals = await Hospital.find({ specializations: specialization });
-    res.json({ hospitals: hospitals.map(h => ({ id: h._id, name: h.hospitalName })) });
+    res.json({
+      hospitals: hospitals.map(h => ({
+        id: h._id,
+        name: h.hospitalName,
+        image: h.image || 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc',
+        location: h.location || 'Unknown',
+        rating: h.rating || 4.5,
+      })),
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -29,7 +37,15 @@ export const getHospitalsBySpecialization = async (req, res) => {
 export const getAllHospitals = async (req, res) => {
   try {
     const hospitals = await Hospital.find();
-    res.json({ hospitals: hospitals.map(h => ({ id: h._id, name: h.hospitalName })) });
+    res.json({
+      hospitals: hospitals.map(h => ({
+        id: h._id,
+        name: h.hospitalName,
+        image: h.image || 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc',
+        location: h.location || 'Unknown',
+        rating: h.rating || 4.5,
+      })),
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -49,19 +65,42 @@ export const getSpecializationsByHospital = async (req, res) => {
   }
 };
 
+// Get doctors by hospital and specialization
+export const getDoctorsByHospitalAndSpecialization = async (req, res) => {
+  try {
+    const { hospitalId, specialization } = req.query;
+    const doctors = await Doctor.find({
+      hospital: hospitalId,
+      specialization,
+    });
+    res.json({
+      doctors: doctors.map(d => ({
+        id: d._id,
+        name: d.fullName,
+        image: d.image,
+        experience: d.experience,
+        rating: d.rating,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // Check available time slots (to avoid overlaps)
 export const checkAvailableTimeSlots = async (req, res) => {
   try {
-    const { hospitalId, date } = req.query;
+    const { hospitalId, doctorId, date } = req.query;
     const appointments = await Appointment.find({
       hospital: hospitalId,
+      doctor: doctorId,
       date: new Date(date),
-      status: { $in: ['pending', 'approved'] }
+      status: { $in: ['pending', 'approved'] },
     });
 
     const allTimeSlots = [
       '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-      '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'
+      '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM',
     ];
 
     const bookedSlots = appointments.map(appointment => appointment.time);
@@ -73,14 +112,17 @@ export const checkAvailableTimeSlots = async (req, res) => {
   }
 };
 
-// Book an appointment (Updated to use authenticated patient)
+// Book an appointment
 export const bookAppointment = async (req, res) => {
   try {
     const { patientId } = req.params;
-    const { patientName, problem, specialization, hospitalId, date, time } = req.body;
+    const { patientName, problem, specialization, hospitalId, doctorId, date, time, appointmentType } = req.body;
 
-    // Patient is already validated by authMiddleware, so we can use req.userModel
-    const patient = req.userModel;
+    // Validate patient (already authenticated via middleware)
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
 
     // Validate hospital
     const hospital = await Hospital.findById(hospitalId);
@@ -88,17 +130,24 @@ export const bookAppointment = async (req, res) => {
       return res.status(404).json({ message: 'Hospital not found' });
     }
 
-    // Validate specialization
-    if (!hospital.specializations.includes(specialization)) {
-      return res.status(400).json({ message: 'Specialization not available in this hospital' });
+    // Validate doctor
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
     }
 
-    // Check for existing appointment at the same date and time
+    // Validate specialization
+    if (!hospital.specializations.includes(specialization) || doctor.specialization !== specialization) {
+      return res.status(400).json({ message: 'Specialization not available for this hospital or doctor' });
+    }
+
+    // Check for existing appointment at the same date and time for the doctor
     const existingAppointment = await Appointment.findOne({
       hospital: hospitalId,
+      doctor: doctorId,
       date: new Date(date),
       time,
-      status: { $in: ['pending', 'approved'] }
+      status: { $in: ['pending', 'approved'] },
     });
 
     if (existingAppointment) {
@@ -112,9 +161,10 @@ export const bookAppointment = async (req, res) => {
       problem,
       specialization,
       hospital: hospitalId,
+      doctor: doctorId,
       date: new Date(date),
       time,
-      status: 'pending'
+      status: 'pending',
     });
 
     await appointment.save();
@@ -128,10 +178,10 @@ export const bookAppointment = async (req, res) => {
 export const getPendingAppointments = async (req, res) => {
   try {
     const { hospitalId } = req.params;
-    // Hospital is already validated by authMiddleware
     const appointments = await Appointment.find({ hospital: hospitalId, status: 'pending' })
       .populate('patient', 'fullName email')
-      .populate('hospital', 'hospitalName');
+      .populate('hospital', 'hospitalName')
+      .populate('doctor', 'fullName');
     res.json({ appointments });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -144,7 +194,8 @@ export const updateAppointmentStatus = async (req, res) => {
     const { appointmentId } = req.params;
     const { status } = req.body;
 
-    if (!['approved', 'rejected'].includes(status)) {
+    // Adjust status to match frontend expectations
+    if (!['Accepted', 'Rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
@@ -153,7 +204,6 @@ export const updateAppointmentStatus = async (req, res) => {
       return res.status(404).json({ message: 'Appointment not found' });
     }
 
-    // Ensure the hospital making the request matches the appointment's hospital
     if (appointment.hospital.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied: Hospital mismatch' });
     }
@@ -172,12 +222,12 @@ export const getAppointmentStatus = async (req, res) => {
   try {
     const { patientId, appointmentId } = req.params;
 
-    // Patient is already validated by authMiddleware
     const appointment = await Appointment.findOne({
       _id: appointmentId,
-      patient: patientId
+      patient: patientId,
     })
-      .populate('hospital', 'hospitalName');
+      .populate('hospital', 'hospitalName')
+      .populate('doctor', 'fullName');
 
     if (!appointment) {
       return res.status(404).json({ message: 'Appointment not found or does not belong to this patient' });
@@ -190,11 +240,15 @@ export const getAppointmentStatus = async (req, res) => {
       specialization: appointment.specialization,
       hospital: {
         id: appointment.hospital._id,
-        name: appointment.hospital.hospitalName
+        name: appointment.hospital.hospitalName,
+      },
+      doctor: {
+        id: appointment.doctor._id,
+        name: appointment.doctor.fullName,
       },
       date: appointment.date,
       time: appointment.time,
-      status: appointment.status
+      status: appointment.status,
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

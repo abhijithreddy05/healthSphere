@@ -1,40 +1,44 @@
-// models/Doctor.js
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const doctorSchema = new mongoose.Schema({
-  name: {
+  fullName: {
     type: String,
     required: true,
-    trim: true
   },
   email: {
     type: String,
     required: true,
-    unique: true,
-    lowercase: true
+    unique: true, // Ensure email is unique
+    trim: true,
+    lowercase: true,
   },
   password: {
     type: String,
-    required: true
-  },
-  specialization: {
-    type: String,
-    required: true
+    required: true,
   },
   hospital: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Hospital',
-    required: true
-  }
+    required: true,
+  },
+  specialization: {
+    type: String,
+    required: true,
+  },
+  experience: {
+    type: String,
+    required: true,
+  },
+  rating: {
+    type: Number,
+    required: true,
+  },
+  image: {
+    type: String,
+    required: true,
+  },
 });
 
-// Hash password before saving
-doctorSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-  next();
-});
+const Doctor = mongoose.model('Doctor', doctorSchema);
 
-export default mongoose.model('Doctor', doctorSchema);
+export default Doctor;
