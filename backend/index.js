@@ -25,7 +25,7 @@ mongoose.connect(process.env.MONGO_URI, {
 });
 
 // Routes
-app.use('/hospitals', hospitalRoutes);
+app.use('/hospitals', hospitalRoutes); // Updated base path to match frontend
 app.use('/doctors', doctorRoutes);
 app.use('/patients', patientRoutes);
 app.use('/appointments', appointmentRoutes);

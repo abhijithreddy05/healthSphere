@@ -1,54 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Bell, Activity } from 'lucide-react';
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 // Define the Appointment interface
 interface Appointment {
   id: string;
   patientName: string;
-  problem: string;
+  doctorName: string; // Updated to match backend response
   specialization: string;
   dateTime: string;
   status: 'Pending' | 'Accepted' | 'Rejected';
 }
 
-function App() {
+interface DecodedToken {
+  id: string;
+  email: string;
+  iat: number;
+  exp: number;
+}
+
+const AppointmentRequests = () => {
   const [activeTab, setActiveTab] = useState('All Requests');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const hospitalId = 'YOUR_HOSPITAL_ID'; // Replace with actual hospital ID (e.g., from login/auth context)
-  const token = localStorage.getItem('token'); // Assuming token is stored after login
+  const [hospitalId, setHospitalId] = useState<string>('');
+  const token = localStorage.getItem('hospitalToken');
+
+  // Fetch hospital ID from token
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded: DecodedToken = jwtDecode(token);
+        setHospitalId(decoded.id);
+      } catch (error) {
+        console.error('Invalid token:', error);
+        localStorage.removeItem('hospitalToken');
+      }
+    }
+  }, [token]);
 
   // Fetch appointments from the backend
   useEffect(() => {
+    if (!hospitalId || !token) return;
+
     const fetchAppointments = async () => {
       try {
         interface ApiResponse {
           appointments: {
             _id: string;
             patientName: string;
-            problem: string;
+            doctorName: string; // Updated to match backend response
             specialization: string;
-            date: string;
+            date: string; // Backend returns date as ISO string
             time: string;
             status: string;
           }[];
         }
 
         const response = await axios.get<ApiResponse>(
-          `http://localhost:5000/api/hospitals/${hospitalId}/pending-appointments`,
+          `http://localhost:3000/hospitals/${hospitalId}/pending-appointments`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+
         // Transform backend data to match frontend Appointment interface
         const transformedAppointments = response.data.appointments.map((appt) => ({
           id: appt._id,
           patientName: appt.patientName,
-          problem: appt.problem,
+          doctorName: appt.doctorName, // Updated to match backend response
           specialization: appt.specialization,
-          dateTime: `${appt.date.split('T')[0]}, ${appt.time}`, // Combine date and time
-          status: appt.status === 'pending' ? 'Pending' : appt.status as 'Pending' | 'Accepted' | 'Rejected', // Explicitly cast status
-        }));
+          dateTime: `${new Date(appt.date).toISOString().split('T')[0]}, ${appt.time}`, // Format date
+          status: appt.status === 'pending' ? 'Pending' : appt.status === 'approved' ? 'Accepted' : 'Rejected', // Map backend status to frontend
+        })) as Appointment[];
         setAppointments(transformedAppointments);
       } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -62,15 +86,17 @@ function App() {
   const handleAccept = async (appointmentId: string) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/hospitals/${hospitalId}/appointments/${appointmentId}/status`,
+        `http://localhost:3000/hospitals/${hospitalId}/appointments/${appointmentId}/status`,
         { status: 'Accepted' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setAppointments(appointments.map(appointment =>
-        appointment.id === appointmentId
-          ? { ...appointment, status: 'Accepted' }
-          : appointment
-      ));
+      setAppointments(
+        appointments.map((appointment) =>
+          appointment.id === appointmentId
+            ? { ...appointment, status: 'Accepted' }
+            : appointment
+        )
+      );
     } catch (error) {
       console.error('Error accepting appointment:', error);
     }
@@ -79,15 +105,17 @@ function App() {
   const handleReject = async (appointmentId: string) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/hospitals/${hospitalId}/appointments/${appointmentId}/status`,
+        `http://localhost:3000/hospitals/${hospitalId}/appointments/${appointmentId}/status`,
         { status: 'Rejected' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setAppointments(appointments.map(appointment =>
-        appointment.id === appointmentId
-          ? { ...appointment, status: 'Rejected' }
-          : appointment
-      ));
+      setAppointments(
+        appointments.map((appointment) =>
+          appointment.id === appointmentId
+            ? { ...appointment, status: 'Rejected' }
+            : appointment
+        )
+      );
     } catch (error) {
       console.error('Error rejecting appointment:', error);
     }
@@ -95,18 +123,18 @@ function App() {
 
   // Stats calculation
   const stats = {
-    today: appointments.filter(a => a.dateTime.includes('2025-04-01')).length,
-    accepted: appointments.filter(a => a.status === 'Accepted').length,
-    rejected: appointments.filter(a => a.status === 'Rejected').length,
-    pending: appointments.filter(a => a.status === 'Pending').length,
+    today: appointments.filter((a) => a.dateTime.includes(new Date().toISOString().split('T')[0])).length, // Dynamic date
+    accepted: appointments.filter((a) => a.status === 'Accepted').length,
+    rejected: appointments.filter((a) => a.status === 'Rejected').length,
+    pending: appointments.filter((a) => a.status === 'Pending').length,
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 pt-20 px-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold mb-8">Patient Appointment Requests</h1>
 
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center">
               <div>
@@ -169,7 +197,7 @@ function App() {
               <thead>
                 <tr className="text-left text-gray-500 text-sm border-b">
                   <th className="p-4">PATIENT NAME</th>
-                  <th className="p-4">PROBLEM</th>
+                  <th className="p-4">DOCTOR NAME</th>
                   <th className="p-4">SPECIALIZATION</th>
                   <th className="p-4">DATE & TIME</th>
                   <th className="p-4">STATUS</th>
@@ -186,7 +214,7 @@ function App() {
                   .map((appointment) => (
                     <tr key={appointment.id} className="border-b">
                       <td className="p-4">{appointment.patientName}</td>
-                      <td className="p-4">{appointment.problem}</td>
+                      <td className="p-4">{appointment.doctorName}</td>
                       <td className="p-4">{appointment.specialization}</td>
                       <td className="p-4">{appointment.dateTime}</td>
                       <td className="p-4">
@@ -229,6 +257,6 @@ function App() {
       </div>
     </div>
   );
-}
+};
 
-export default App;
+export default AppointmentRequests;

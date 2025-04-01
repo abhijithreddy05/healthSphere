@@ -5,13 +5,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'));
-const UserSelection = lazy(() => import('./pages/UserSelection'));
-const Login = lazy(() => import('./components/Login'));
+const UserSelection = lazy(() => import('./components/UserSelection'));
+const Login = lazy(() => import('./pages/Login'));
 const PatientRegister = lazy(() => import('./components/PatientRegister'));
-const Patient = lazy(() => import('./pages/Patient'));
-const PatientHistory = lazy(() => import('./pages/AppointmentBooking/PatientHistory')); // Added import
-const AppointmentBookingMain = lazy(() => import('./pages/AppointmentBooking/AppointmentBookingPage'));
-// const HospitalDashboard = lazy(() => import('./pages/Hospital/HospitalDashboard'));
+const Patient = lazy(() => import('./pages/Patient/Patient'));
+const PatientHistory = lazy(() => import('./pages/Patient/AppointmentBooking/PatientHistory')); // Added import
+const AppointmentBookingMain = lazy(() => import('./pages/Patient/AppointmentBooking/AppointmentBookingPage'));
+const HospitalDashboard = lazy(() => import('./pages/Hospital/HospitalDashboard'));
 // const DoctorDashboard = lazy(() => import('./pages/doctor/DoctorDashboard'));
 
 const App = () => {
@@ -57,14 +57,14 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-            {/* <Route
+            <Route
               path="/hospital-dashboard"
               element={
                 <ProtectedRoute>
                   <HospitalDashboard />
                 </ProtectedRoute>
               }
-            /> */}
+            />
             {/* <Route
               path="/doctor-dashboard"
               element={
