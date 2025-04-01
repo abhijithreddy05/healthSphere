@@ -26,7 +26,7 @@ const DoctorsList: React.FC<DoctorsListProps> = ({ hospital, specialty, onSelect
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/patients/doctors', {
+        const response = await axios.get('http://localhost:3000/appointments/doctors', {
           params: {
             hospitalId: hospital.id,
             specialization: specialty,
@@ -88,7 +88,7 @@ const DoctorsList: React.FC<DoctorsListProps> = ({ hospital, specialty, onSelect
                     alt={doctor.name}
                     className="w-full h-48 object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = 'https://via.placeholder.com/150'; // Fallback image
+                      e.currentTarget.src = 'https://via.placeholder.com/150';
                     }}
                   />
                   <div className="p-4">

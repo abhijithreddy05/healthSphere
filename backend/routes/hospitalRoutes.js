@@ -1,29 +1,12 @@
-// routes/hospitalRoutes.js
 import express from 'express';
-import { 
-  registerHospital, 
-  loginHospital, 
-  addDoctor,
-  getSpecializations, 
-  getDoctors 
-} from '../controllers/hospitalController.js';
-import { 
-  getPendingAppointments,
-  updateAppointmentStatus
-} from '../controllers/appointmentController.js';
-import authMiddleware from '../middleware/authMiddleware.js';
+import { registerHospital, loginHospital } from '../controllers/hospitalController.js';
 
 const router = express.Router();
 
-// Public routes (no authentication needed)
+// Manual hospital registration (via Postman)
 router.post('/register', registerHospital);
-router.post('/login', loginHospital);
 
-// Protected routes (require hospital authentication)
-router.post('/:hospitalId/addDoctor', authMiddleware('hospital'), addDoctor);
-router.get('/:hospitalId/specializations', authMiddleware('hospital'), getSpecializations);
-router.get('/:hospitalId/doctors', authMiddleware('hospital'), getDoctors);
-router.get('/:hospitalId/pending-appointments', authMiddleware('hospital'), getPendingAppointments);
-router.put('/:hospitalId/appointments/:appointmentId/status', authMiddleware('hospital'), updateAppointmentStatus);
+// Hospital login
+router.post('/login', loginHospital);
 
 export default router;

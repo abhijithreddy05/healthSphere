@@ -26,8 +26,8 @@ const HospitalsList: React.FC<HospitalsListProps> = ({ specialty, onSelectHospit
     const fetchHospitals = async () => {
       try {
         const endpoint = specialty
-          ? `http://localhost:3000/patients/hospitals/specialization/${specialty}`
-          : 'http://localhost:3000/patients/hospitals';
+          ? `http://localhost:3000/appointments/hospitals/specialization/${specialty}`
+          : 'http://localhost:3000/appointments/hospitals';
         const response = await axios.get<{ hospitals: Hospital[] }>(endpoint);
         setHospitals(response.data.hospitals);
       } catch (err: any) {

@@ -9,7 +9,6 @@ const appointmentSchema = new mongoose.Schema({
   patientName: {
     type: String,
     required: true,
-    trim: true,
   },
   problem: {
     type: String,
@@ -34,7 +33,12 @@ const appointmentSchema = new mongoose.Schema({
     required: true,
   },
   time: {
-    type: String, // e.g., "10:00 AM"
+    type: String,
+    required: true,
+  },
+  appointmentType: {
+    type: String,
+    enum: ['in-person', 'video'],
     required: true,
   },
   status: {

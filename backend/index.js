@@ -1,34 +1,34 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import patientRoutes from './routes/patientRoutes.js';
-import hospitalRoutes from './routes/hospitalRoutes.js';
-import doctorRoutes from './routes/doctorRoutes.js';
 import dotenv from 'dotenv';
 import cors from 'cors';
-
-// Import models to ensure they are registered with Mongoose
-import './models/Patient.js';
-import './models/Hospital.js';
-import './models/doctor.js';
-import './models/appointment.js';
-
-const app = express();
-app.use(cors());
+import hospitalRoutes from './routes/hospitalRoutes.js';
+import doctorRoutes from './routes/doctorRoutes.js';
+import patientRoutes from './routes/patientRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
 
 dotenv.config();
 
-// Middleware
+const app = express();
+
+app.use(cors());
 app.use(express.json());
 
-// MongoDB Atlas connection
-mongoose.connect(process.env.MONGO_URI, {})
-  .then(() => console.log('MongoDB Atlas connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  // useNewUrlParser: true,
+  // useUnifiedTopology: true,
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch((err) => {
+  console.error('MongoDB connection error:', err);
+});
 
 // Routes
-app.use('/patients', patientRoutes);
 app.use('/hospitals', hospitalRoutes);
 app.use('/doctors', doctorRoutes);
+app.use('/patients', patientRoutes);
+app.use('/appointments', appointmentRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

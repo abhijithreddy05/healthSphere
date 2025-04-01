@@ -6,6 +6,7 @@ import SpecialtiesList from './SpecialtiesList';
 import HospitalsList from './HospitalsList';
 import DoctorsList from './DoctorsList';
 import AppointmentBooking from './AppointmentBooking';
+import axios from 'axios';
 
 export type Step = 'landing' | 'specialties-hospitals' | 'hospitals-specialties' | 'doctors' | 'booking';
 
@@ -24,6 +25,7 @@ function AppointmentBookingPage() {
   const [bookingPath, setBookingPath] = useState<'specialty-first' | 'hospital-first' | null>(null);
   const [patientId, setPatientId] = useState<string>('');
   const [isBookingSubmitted, setIsBookingSubmitted] = useState(false);
+  const [hospitalSpecialties, setHospitalSpecialties] = useState<string[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +43,22 @@ function AppointmentBookingPage() {
       navigate('/login/patient');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (currentStep === 'hospitals-specialties' && selectedHospital.id) {
+      const fetchHospitalSpecialties = async () => {
+        try {
+          const response = await axios.get(
+            `http://localhost:3000/appointments/hospitals/${selectedHospital.id}/specializations`
+          );
+          setHospitalSpecialties(response.data.specializations);
+        } catch (err: any) {
+          console.error('Error fetching hospital specialties:', err);
+        }
+      };
+      fetchHospitalSpecialties();
+    }
+  }, [currentStep, selectedHospital.id]);
 
   const goBack = () => {
     switch (currentStep) {
@@ -189,6 +207,7 @@ function AppointmentBookingPage() {
               Select a Specialty at {selectedHospital.name}
             </h2>
             <SpecialtiesList
+              hospitalId={selectedHospital.id} // Pass hospitalId
               onSelectSpecialty={(specialty) => {
                 setSelectedSpecialty(specialty);
                 setCurrentStep('doctors');

@@ -8,13 +8,11 @@ const doctorSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true, // Ensure email is unique
-    trim: true,
-    lowercase: true,
+    unique: true,
   },
   password: {
     type: String,
-    required: true,
+    required: true, // Add password field for login
   },
   hospital: {
     type: mongoose.Schema.Types.ObjectId,
@@ -27,18 +25,16 @@ const doctorSchema = new mongoose.Schema({
   },
   experience: {
     type: String,
-    required: true,
+    default: 'Not specified',
   },
   rating: {
     type: Number,
-    required: true,
+    default: 4.0,
   },
   image: {
     type: String,
-    required: true,
+    default: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2',
   },
 });
 
-const Doctor = mongoose.model('Doctor', doctorSchema);
-
-export default Doctor;
+export default mongoose.model('Doctor', doctorSchema);

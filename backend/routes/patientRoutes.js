@@ -1,36 +1,19 @@
 import express from 'express';
-import {
-  registerPatient,
-  loginPatient,
-} from '../controllers/patientController.js';
-import {
-  getAllSpecializations,
-  getHospitalsBySpecialization,
-  getAllHospitals,
-  getSpecializationsByHospital,
-  getDoctorsByHospitalAndSpecialization,
-  checkAvailableTimeSlots,
-  bookAppointment,
-  getAppointmentStatus,
-  getAppointmentHistory,
-} from '../controllers/appointmentController.js';
-import authMiddleware from '../middleware/authMiddleware.js';
+import { registerPatient, loginPatient, getPatientProfile } from '../controllers/patientController.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
+import { getPatientAppointments } from '../controllers/appointmentController.js';
 
 const router = express.Router();
 
-// Public routes (no authentication needed)
+// Public patient registration
 router.post('/register', registerPatient);
-router.post('/login', loginPatient);
-router.get('/specializations', getAllSpecializations);
-router.get('/hospitals/specialization/:specialization', getHospitalsBySpecialization);
-router.get('/hospitals', getAllHospitals);
-router.get('/hospitals/:hospitalId/specializations', getSpecializationsByHospital);
-router.get('/doctors', getDoctorsByHospitalAndSpecialization);
-router.get('/timeslots', checkAvailableTimeSlots);
 
-// Protected routes (require patient authentication)
-router.post('/:patientId/book', authMiddleware('patient'), bookAppointment);
-router.get('/:patientId/appointments/:appointmentId/status', authMiddleware('patient'), getAppointmentStatus);
-router.get('/:patientId/appointments', authMiddleware('patient'), getAppointmentHistory);
+// Patient login
+router.post('/login', loginPatient);
+
+// Protected route: Get patient profile
+router.get('/:patientId', authMiddleware('patient'), getPatientProfile);
+// Protected route: Get patient appointment history
+router.get('/:patientId/appointments', authMiddleware('patient'), getPatientAppointments);
 
 export default router;

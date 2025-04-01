@@ -4,39 +4,28 @@ import jwt from 'jsonwebtoken';
 
 export const registerPatient = async (req, res) => {
   try {
-    const { fullName, contactNumber, email, password } = req.body; // Added contactNumber
+    const { fullName, email, password, contactNumber } = req.body;
+
+    if (!fullName || !email || !password || !contactNumber) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
 
     const existingPatient = await Patient.findOne({ email });
     if (existingPatient) {
-      return res.status(400).json({ message: 'Email already registered' });
+      return res.status(400).json({ message: 'Patient already exists' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10); // Added password hashing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const patient = new Patient({
       fullName,
-      contactNumber, // Added contactNumber
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      contactNumber,
     });
 
     await patient.save();
-
-    const token = jwt.sign(
-      { id: patient._id, role: 'patient' },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '1h' }
-    );
-
-    res.status(201).json({
-      message: 'Patient registered successfully',
-      token, // Added token for frontend consistency
-      user: { // Added user data for frontend
-        id: patient._id,
-        fullName: patient.fullName,
-        contactNumber: patient.contactNumber,
-        email: patient.email
-      }
-    });
+    res.status(201).json({ message: 'Patient registered successfully', patientId: patient._id });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -45,6 +34,10 @@ export const registerPatient = async (req, res) => {
 export const loginPatient = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     const patient = await Patient.findOne({ email });
     if (!patient) {
@@ -58,20 +51,23 @@ export const loginPatient = async (req, res) => {
 
     const token = jwt.sign(
       { id: patient._id, role: 'patient' },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    res.json({
-      message: 'Login successful',
-      token,
-      user: { // Changed "patient" to "user" for consistency
-        id: patient._id,
-        fullName: patient.fullName,
-        contactNumber: patient.contactNumber, // Added contactNumber
-        email: patient.email
-      }
-    });
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const getPatientProfile = async (req, res) => {
+  try {
+    const patient = await Patient.findById(req.user.id).select('-password');
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+    res.json(patient);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

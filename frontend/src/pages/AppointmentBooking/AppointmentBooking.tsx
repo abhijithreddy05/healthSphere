@@ -7,7 +7,7 @@ interface AppointmentBookingProps {
   specialty: string;
   doctor: { id: string; name: string };
   patientId: string;
-  onBookingSubmit: () => void; // Callback to notify parent of booking submission
+  onBookingSubmit: () => void;
   isBookingSubmitted: boolean;
 }
 
@@ -23,14 +23,38 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const [patientName, setPatientName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Fetch patient name on component mount
+  useEffect(() => {
+    const fetchPatientProfile = async () => {
+      try {
+        const token = localStorage.getItem('patientToken');
+        if (!token) {
+          throw new Error('No token found. Please log in again.');
+        }
+        const response = await axios.get(`http://localhost:3000/patients/${patientId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setPatientName(response.data.fullName);
+      } catch (err: any) {
+        setError('Failed to load patient profile');
+        console.error('Error fetching patient profile:', err);
+      }
+    };
+
+    fetchPatientProfile();
+  }, [patientId]);
 
   useEffect(() => {
     const fetchTimeSlots = async () => {
       if (!selectedDate) return;
       try {
-        const response = await axios.get('http://localhost:3000/patients/timeslots', {
+        const response = await axios.get('http://localhost:3000/appointments/timeslots', {
           params: {
             hospitalId: hospital.id,
             doctorId: doctor.id,
@@ -59,10 +83,10 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       }
 
       const response = await axios.post(
-        `http://localhost:3000/patients/${patientId}/book`,
+        `http://localhost:3000/appointments/${patientId}/book`,
         {
-          patientName: 'Patient Name', // Replace with actual patient name from profile
-          problem: 'General checkup', // Replace with user input if needed
+          patientName,
+          problem: 'General checkup',
           specialization: specialty,
           hospitalId: hospital.id,
           doctorId: doctor.id,

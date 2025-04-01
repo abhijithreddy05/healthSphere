@@ -4,9 +4,10 @@ import axios from 'axios';
 
 interface SpecialtiesListProps {
   onSelectSpecialty: (specialty: string) => void;
+  hospitalId?: string; // Optional prop to fetch specialties for a specific hospital
 }
 
-const SpecialtiesList: React.FC<SpecialtiesListProps> = ({ onSelectSpecialty }) => {
+const SpecialtiesList: React.FC<SpecialtiesListProps> = ({ onSelectSpecialty, hospitalId }) => {
   const [specialties, setSpecialties] = useState<{ name: string; image: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,12 +17,16 @@ const SpecialtiesList: React.FC<SpecialtiesListProps> = ({ onSelectSpecialty }) 
   useEffect(() => {
     const fetchSpecialties = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/patients/specializations');
-        // Add a default image since the backend doesn't provide one
-        const data = response.data as { specializations: string[] };
+        const endpoint = hospitalId
+          ? `http://localhost:3000/appointments/hospitals/${hospitalId}/specializations`
+          : 'http://localhost:3000/appointments/specializations';
+        const response = await axios.get(endpoint);
+        const data = hospitalId
+          ? { specializations: response.data.specializations }
+          : response.data;
         const specialtiesWithImages = data.specializations.map((specialty: string) => ({
           name: specialty,
-          image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528', // Default image
+          image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528',
         }));
         setSpecialties(specialtiesWithImages);
       } catch (err: any) {
@@ -33,7 +38,7 @@ const SpecialtiesList: React.FC<SpecialtiesListProps> = ({ onSelectSpecialty }) 
     };
 
     fetchSpecialties();
-  }, []);
+  }, [hospitalId]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainer.current) {
