@@ -105,16 +105,29 @@ function AppointmentBookingPage() {
             <h1 className="ml-4 text-2xl font-bold text-indigo-600">Healthsphere</h1>
           </div>
           <nav className="space-x-6 flex items-center">
+            {/* Updated Back to Dashboard Link */}
             <Link
-              to="/patient-dashboard"
+              to="/patient-dashboard" // Changed to homepage
               className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors"
             >
               <img
                 src="https://cdn-icons-png.flaticon.com/512/25/25694.png"
-                alt="Back to Dashboard Icon"
+                alt="Back to Home Icon"
                 className="h-5 w-5 mr-1"
               />
-              Back to Dashboard
+              Back to Home
+            </Link>
+            {/* Appointment Bookings Button */}
+            <Link
+              to="/PatientHistory"
+              className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors"
+            >
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/621/621785.png"
+                alt="Appointment Bookings Icon"
+                className="h-5 w-5 mr-1"
+              />
+              Appointment Bookings
             </Link>
           </nav>
         </div>
@@ -207,7 +220,7 @@ function AppointmentBookingPage() {
               Select a Specialty at {selectedHospital.name}
             </h2>
             <SpecialtiesList
-              hospitalId={selectedHospital.id} // Pass hospitalId
+              hospitalId={selectedHospital.id}
               onSelectSpecialty={(specialty) => {
                 setSelectedSpecialty(specialty);
                 setCurrentStep('doctors');

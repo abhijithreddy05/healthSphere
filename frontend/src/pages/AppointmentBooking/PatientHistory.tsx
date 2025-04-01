@@ -19,7 +19,7 @@ interface DecodedToken {
   exp: number;
 }
 
-const PatientDashboard: React.FC = () => {
+const PatientHistory: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patientId, setPatientId] = useState<string>('');
   const [error, setError] = useState('');
@@ -49,7 +49,7 @@ const PatientDashboard: React.FC = () => {
       try {
         const token = localStorage.getItem('patientToken');
         const response = await axios.get(
-          `http://localhost:3000/patients/${patientId}/appointments`, // Fixed endpoint
+          `http://localhost:3000/patients/${patientId}/appointments`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -90,6 +90,17 @@ const PatientDashboard: React.FC = () => {
             <h1 className="ml-4 text-2xl font-bold text-indigo-600">Healthsphere</h1>
           </div>
           <nav className="space-x-6 flex items-center">
+            <Link
+              to="/appointments"
+              className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors"
+            >
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/25/25694.png"
+                alt="Back to Appointments Icon"
+                className="h-5 w-5 mr-1"
+              />
+              Back to Appointments
+            </Link>
             <button
               onClick={handleLogout}
               className="text-gray-600 hover:text-indigo-600 transition-colors"
@@ -101,7 +112,7 @@ const PatientDashboard: React.FC = () => {
       </header>
 
       <div className="pt-24 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8">Patient Dashboard</h2>
+        <h2 className="text-3xl font-bold mb-8">Appointment History</h2> {/* Updated title */}
         <div className="mb-8">
           <Link
             to="/appointments"
@@ -158,4 +169,4 @@ const PatientDashboard: React.FC = () => {
   );
 };
 
-export default PatientDashboard;
+export default PatientHistory;

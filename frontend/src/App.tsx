@@ -9,6 +9,7 @@ const UserSelection = lazy(() => import('./pages/UserSelection'));
 const Login = lazy(() => import('./components/Login'));
 const PatientRegister = lazy(() => import('./components/PatientRegister'));
 const Patient = lazy(() => import('./pages/Patient'));
+const PatientHistory = lazy(() => import('./pages/AppointmentBooking/PatientHistory')); // Added import
 const AppointmentBookingMain = lazy(() => import('./pages/AppointmentBooking/AppointmentBookingPage'));
 // const HospitalDashboard = lazy(() => import('./pages/Hospital/HospitalDashboard'));
 // const DoctorDashboard = lazy(() => import('./pages/doctor/DoctorDashboard'));
@@ -45,6 +46,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <Patient />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/PatientHistory" // Added route for PatientHistory
+              element={
+                <ProtectedRoute>
+                  <PatientHistory />
                 </ProtectedRoute>
               }
             />
