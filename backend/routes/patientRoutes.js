@@ -12,6 +12,7 @@ import {
   checkAvailableTimeSlots,
   bookAppointment,
   getAppointmentStatus,
+  getAppointmentHistory,
 } from '../controllers/appointmentController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 
@@ -30,5 +31,6 @@ router.get('/timeslots', checkAvailableTimeSlots);
 // Protected routes (require patient authentication)
 router.post('/:patientId/book', authMiddleware('patient'), bookAppointment);
 router.get('/:patientId/appointments/:appointmentId/status', authMiddleware('patient'), getAppointmentStatus);
+router.get('/:patientId/appointments', authMiddleware('patient'), getAppointmentHistory);
 
 export default router;

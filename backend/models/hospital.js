@@ -1,41 +1,32 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const hospitalSchema = new mongoose.Schema({
   hospitalName: {
     type: String,
     required: true,
-    trim: true
   },
   email: {
     type: String,
     required: true,
     unique: true,
-    lowercase: true
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
   specializations: [{
     type: String,
-    unique: true // Ensures no duplicate specializations
+    // Remove unique: true to avoid the duplicate key error
   }],
-  doctors: [{
-    name: String,
-    specialization: String
-  }]
+  image: {
+    type: String,
+  },
+  location: {
+    type: String,
+  },
+  rating: {
+    type: Number,
+  },
 });
 
-// Hash password before saving
-hospitalSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-  next();
-});
-
-// Prevent overwriting the model
-const Hospital = mongoose.models.Hospital || mongoose.model('Hospital', hospitalSchema);
-
-export default Hospital;
+export default mongoose.model('Hospital', hospitalSchema);

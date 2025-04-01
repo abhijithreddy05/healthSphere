@@ -5,37 +5,34 @@ import jwt from 'jsonwebtoken';
 
 export const registerHospital = async (req, res) => {
   try {
-    const { hospitalName, email, password } = req.body;
+    const { hospitalName, email, password, specializations } = req.body;
 
-    const existingHospital = await Hospital.findOne({ email });
-    if (existingHospital) {
-      return res.status(400).json({ message: 'Email already registered' });
+    // Validate required fields
+    if (!hospitalName || !email || !password) {
+      return res.status(400).json({ message: 'Hospital name, email, and password are required' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10); // Added password hashing
+    // Check if hospital already exists
+    const existingHospital = await Hospital.findOne({ email });
+    if (existingHospital) {
+      return res.status(400).json({ message: 'Hospital already exists' });
+    }
+
+    // Ensure specializations is an array and remove duplicates
+    const uniqueSpecializations = specializations
+      ? [...new Set(specializations)] // Remove duplicates if provided
+      : []; // Default to empty array if not provided
+
+    // Create new hospital
     const hospital = new Hospital({
       hospitalName,
       email,
-      password: hashedPassword
+      password, // In a real app, you should hash the password
+      specializations: uniqueSpecializations,
     });
 
     await hospital.save();
-
-    const token = jwt.sign(
-      { id: hospital._id, role: 'hospital' },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '1h' }
-    );
-
-    res.status(201).json({
-      message: 'Hospital registered successfully',
-      token, // Added token for frontend consistency
-      user: { // Added user data for frontend
-        id: hospital._id,
-        hospitalName: hospital.hospitalName,
-        email: hospital.email
-      }
-    });
+    res.status(201).json({ message: 'Hospital registered successfully', hospitalId: hospital._id });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -77,53 +74,47 @@ export const loginHospital = async (req, res) => {
 
 export const addDoctor = async (req, res) => {
   try {
-    // Extract hospitalId from URL parameters
-    const { hospitalId } = req.params;
-
-    // Extract authenticated hospital user from req.user (set by authMiddleware)
-    const authenticatedHospitalId = req.user.id;
-
-    // Verify that the authenticated hospital matches the hospitalId in the URL
-    if (hospitalId !== authenticatedHospitalId) {
-      return res.status(403).json({ message: 'Unauthorized: You can only add doctors to your own hospital' });
-    }
-
-    // Extract doctor details from the request body
-    const { fullName, email, password, specialization, experience, rating, image } = req.body;
+    const { fullName, email, password, hospital, specialization, experience, rating, image } = req.body;
 
     // Validate required fields
-    if (!fullName || !email || !password || !specialization || !experience || !rating || !image) {
-      return res.status(400).json({ message: 'All fields are required: fullName, email, password, specialization, experience, rating, image' });
+    if (!fullName || !email || !password || !hospital || !specialization) {
+      return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
-    // Check if a doctor with the same email already exists
+    // Check if doctor already exists
     const existingDoctor = await Doctor.findOne({ email });
     if (existingDoctor) {
-      return res.status(400).json({ message: 'A doctor with this email already exists' });
+      return res.status(400).json({ message: 'Doctor already exists' });
     }
 
-    // Hash the password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Validate hospital
+    const hospitalDoc = await Hospital.findById(hospital);
+    if (!hospitalDoc) {
+      return res.status(404).json({ message: 'Hospital not found' });
+    }
 
-    // Create a new doctor
-    const newDoctor = new Doctor({
+    // Create new doctor
+    const doctor = new Doctor({
       fullName,
       email,
-      password: hashedPassword, // Store the hashed password
-      hospital: hospitalId,
+      password, // In a real app, you should hash the password
+      hospital,
       specialization,
-      experience,
-      rating,
-      image,
+      experience: experience || 'Not specified',
+      rating: rating || 4.0,
+      image: image || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2',
     });
 
-    // Save the doctor to the database
-    await newDoctor.save();
+    await doctor.save();
 
-    // Return success response (excluding the password in the response)
-    const { password: _, ...doctorResponse } = newDoctor.toObject();
-    res.status(201).json({ message: 'Doctor added successfully', doctor: doctorResponse });
+    // Update the hospital's specializations array (remove duplicates)
+    if (!hospitalDoc.specializations.includes(specialization)) {
+      hospitalDoc.specializations.push(specialization);
+      hospitalDoc.specializations = [...new Set(hospitalDoc.specializations)]; // Remove duplicates
+      await hospitalDoc.save();
+    }
+
+    res.status(201).json({ message: 'Doctor registered successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

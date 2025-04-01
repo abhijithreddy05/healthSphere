@@ -254,3 +254,44 @@ export const getAppointmentStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+// Get appointment history for a patient
+export const getAppointmentHistory = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    // Fetch all appointments for the patient
+    const appointments = await Appointment.find({ patient: patientId })
+      .populate('hospital', 'hospitalName') // Populate hospitalName from Hospital model
+      .populate('doctor', 'fullName') // Populate fullName from Doctor model
+      .sort({ createdAt: -1 }); // Sort by creation date (newest first)
+
+    // Map the appointments to the desired format, with error handling
+    const appointmentHistory = appointments
+      .filter((appointment) => {
+        // Check if hospital and doctor are populated
+        if (!appointment.hospital || !appointment.doctor) {
+          console.error(
+            `Invalid appointment (ID: ${appointment._id}): ` +
+            `hospital: ${JSON.stringify(appointment.hospital)}, ` +
+            `doctor: ${JSON.stringify(appointment.doctor)}`
+          );
+          return false; // Skip this appointment
+        }
+        return true;
+      })
+      .map((appointment) => ({
+        hospitalName: appointment.hospital.hospitalName,
+        specialization: appointment.specialization,
+        doctorName: appointment.doctor.fullName,
+        date: appointment.date.toISOString().split('T')[0], // Format date as YYYY-MM-DD
+        time: appointment.time,
+        status: appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1), // Capitalize status (e.g., "pending" -> "Pending")
+      }));
+
+    res.status(200).json(appointmentHistory);
+  } catch (error) {
+    console.error('Error in getAppointmentHistory:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
