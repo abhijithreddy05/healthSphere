@@ -189,12 +189,10 @@ export const getPatientAppointments = async (req, res) => {
   }
 };
 
-// Updated controller to fetch appointments for a hospital
 export const getHospitalAppointments = async (req, res) => {
   try {
     const { hospitalId } = req.params;
 
-    // Verify that the authenticated hospital is accessing its own appointments
     if (req.user.id !== hospitalId) {
       return res.status(403).json({ message: 'You can only view appointments for your own hospital' });
     }
@@ -208,7 +206,7 @@ export const getHospitalAppointments = async (req, res) => {
       .map(appointment => ({
         _id: appointment._id,
         patientName: appointment.patientName,
-        doctorName: appointment.doctor.fullName, // Include doctor's name instead of problem
+        doctorName: appointment.doctor.fullName,
         specialization: appointment.specialization,
         date: appointment.date,
         time: appointment.time,
@@ -221,18 +219,15 @@ export const getHospitalAppointments = async (req, res) => {
   }
 };
 
-// Controller to update appointment status
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const { hospitalId, appointmentId } = req.params;
     const { status } = req.body;
 
-    // Verify that the authenticated hospital is updating its own appointment
     if (req.user.id !== hospitalId) {
       return res.status(403).json({ message: 'You can only update appointments for your own hospital' });
     }
 
-    // Validate status
     if (!['Accepted', 'Rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status. Must be "Accepted" or "Rejected"' });
     }
@@ -242,16 +237,48 @@ export const updateAppointmentStatus = async (req, res) => {
       return res.status(404).json({ message: 'Appointment not found' });
     }
 
-    // Ensure the appointment belongs to this hospital
     if (appointment.hospital.toString() !== hospitalId) {
       return res.status(403).json({ message: 'This appointment does not belong to your hospital' });
     }
 
-    // Update status (map frontend status to backend status)
     appointment.status = status === 'Accepted' ? 'approved' : 'rejected';
     await appointment.save();
 
     res.json({ message: 'Appointment status updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// New controller to fetch approved appointments for a doctor
+export const getDoctorAppointments = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    // Verify that the authenticated doctor is accessing their own appointments
+    if (req.user.id !== doctorId) {
+      return res.status(403).json({ message: 'You can only view your own appointments' });
+    }
+
+    const appointments = await Appointment.find({ 
+      doctor: doctorId,
+      status: 'approved' // Only fetch approved appointments
+    })
+      .populate('patient', 'fullName')
+      .populate('hospital', 'hospitalName');
+
+    const filteredAppointments = appointments
+      .filter(appointment => appointment.patient && appointment.hospital)
+      .map(appointment => ({
+        id: appointment._id,
+        patientName: appointment.patientName,
+        date: appointment.date.toISOString().split('T')[0], // Format date as YYYY-MM-DD
+        time: appointment.time,
+        reason: appointment.problem, // Map 'problem' to 'reason' for frontend
+        status: 'Confirmed' // Map backend 'approved' to frontend 'Confirmed'
+      }));
+
+    res.json({ appointments: filteredAppointments });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

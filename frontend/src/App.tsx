@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ProtectedRoute from './components/ProtectedRoute';
+import DoctorDashboardApp from './pages/Doctor/DoctorDashboard';
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/Home'));
@@ -12,7 +13,7 @@ const Patient = lazy(() => import('./pages/Patient/Patient'));
 const PatientHistory = lazy(() => import('./pages/Patient/AppointmentBooking/PatientHistory')); // Added import
 const AppointmentBookingMain = lazy(() => import('./pages/Patient/AppointmentBooking/AppointmentBookingPage'));
 const HospitalDashboard = lazy(() => import('./pages/Hospital/HospitalDashboard'));
-// const DoctorDashboard = lazy(() => import('./pages/doctor/DoctorDashboard'));
+const DoctorDashboard = lazy(() => import('./pages/Doctor/DoctorDashboard'));
 
 const App = () => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -65,14 +66,14 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-            {/* <Route
+            <Route
               path="/doctor-dashboard"
               element={
                 <ProtectedRoute>
                   <DoctorDashboard />
                 </ProtectedRoute>
               }
-            /> */}
+            />
             <Route
               path="/appointments"
               element={
